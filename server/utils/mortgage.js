@@ -90,4 +90,4 @@ const accrueAll = () => {
   if (accountsChanged) writeJSON(accountsFile, accountsList);
 };
 
-module.exports = { accrueAll, accrueOne };
+module.exports = { accrueAll, accrueOne, addOneMonth };
