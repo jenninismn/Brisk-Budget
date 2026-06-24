@@ -19,7 +19,6 @@ jest.mock('../../server/config/paths', () => ({
   accountsFile: 'accounts.json'
 }));
 
-
 describe('Mortgage Zinsberechnung Logik', () => {
 
   test('addOneMonth springt korrekt einen Monat weiter', () => {
@@ -88,6 +87,7 @@ describe('Mortgage Zinsberechnung Logik', () => {
 
     expect(writeJSON).toHaveBeenCalled();
 
+    //2. Parameter vom ersten Aufruf von writeJSON (Array mit Daten die gespeicehrt werden sollen)
     const writtenTransactions = writeJSON.mock.calls[0][1];
 
     expect(writtenTransactions).toHaveLength(1);
