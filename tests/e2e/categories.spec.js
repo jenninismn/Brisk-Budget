@@ -1,36 +1,21 @@
 import { test, expect } from '@playwright/test';
+import { CategoryPage } from './pom/CategoryPage';
+import { SettingsPage } from './pom/SettingsPage';
+import { AppPage } from './pom/AppPage';
 
-const APP_URL = 'http://localhost:3000'; 
+test('User kann eine neue Kategorie erstellen', async ({ page }) => {
+  const app = new AppPage(page);
+  const settings = new SettingsPage(page);
+  const categoryPage = new CategoryPage(page);
 
-test.describe('Category Management E2E Tests', () => {
-
-  test.beforeEach(async ({ page }) => {
-    await page.goto(APP_URL);
-  });
-
-  test('User can create a new category from start to finish', async ({ page }) => {
-
-    const mobileMenuBtn = page.locator('#mobileMenuBtn');
-    if (await mobileMenuBtn.isVisible()) {
-        await mobileMenuBtn.click();
-    }
-
-    await page.locator('#settingsBtn').click();
-
-    await page.locator('.settings-nav-item[data-tab="categories"]').click();
-
-    await page.locator('#addCategoryBtn').click();
-
-    const modal = page.locator('#categoryEditModal');
-    await expect(modal).toBeVisible();
-
-    await page.locator('#categoryEditName').fill('E2E Test Kategorie');
-    await page.locator('#categoryEditEmoji').fill('🚀');
-
-    await page.getByRole('button', { name: /Save|Speichern/i }).click();
-
-    const newCategoryElement = page.locator('.category-name-text', { hasText: 'E2E Test Kategorie' });
-    await expect(newCategoryElement).toBeVisible();
-  });
-
+  await app.goto();
+  await app.openMobileMenuIfNeeded();
+  
+  await settings.openCategoriesTab();
+  
+  const response = await categoryPage.addCategory('Uni Projekt', '🎓');
+  
+  expect(response.ok()).toBeTruthy();
+  
+  await categoryPage.expectCategoryExists('Uni Projekt');
 });
