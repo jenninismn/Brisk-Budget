@@ -42,9 +42,19 @@ const steps = [
     args: ['compose', '--profile', 'test', 'run', '--rm', 'e2e']
   },
   {
-    name: 'Load Test',
+    name: 'Kategorien lesen Load Test',
     command: 'docker',
-    args: ['compose', '--profile', 'test', 'run', '--rm', 'loadtest']
+    args: ['compose', '--profile', 'test', 'run', '--rm', '-e', 'K6_WEB_DASHBOARD_EXPORT=/output/k6/categories-dashboard.html', 'loadtest', 'run', '/scripts/categories.js']
+  },
+  {
+    name: 'Kategorien erstellen Load Test',
+    command: 'docker',
+    args: ['compose', '--profile', 'test', 'run', '--rm', '-e', 'K6_WEB_DASHBOARD_EXPORT=/output/k6/categories-create-dashboard.html', 'loadtest', 'run', '/scripts/categories-create.js']
+  },
+  {
+    name: 'Homepage Load Test',
+    command: 'docker',
+    args: ['compose', '--profile', 'test', 'run', '--rm', '-e', 'K6_WEB_DASHBOARD_EXPORT=/output/k6/homepage-dashboard.html', 'loadtest', 'run', '/scripts/homepage-loadtest.js']
   },
   {
     name: 'Docker Compose Umgebung stoppen',
