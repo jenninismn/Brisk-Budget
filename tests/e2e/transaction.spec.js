@@ -13,9 +13,9 @@ test.describe('Transaction E2E Tests', () => {
     await app.goto();
     await app.openMobileMenuIfNeeded();
 
-    await accPage.createAccount('Jennitest');
+    await accPage.createAccount('JennitestTwo');
     
-    await page.locator('.account-item', { hasText: 'Jennitest' }).click();
+    await page.locator('.account-item', { hasText: 'JennitestTwo' }).click();
 
     const response = await txPage.createTransaction({
       payee: 'Wocheneinkauf',
