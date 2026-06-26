@@ -6,8 +6,8 @@ export class SettingsPage {
     this.categoriesTab = this.page.locator('.settings-nav-item[data-tab="categories"]');
   }
 
-  openCategoriesTab() {
-    this.settingsBtn.click();
-    this.categoriesTab.click();
+  async openCategoriesTab() {
+    await this.settingsBtn.click();
+    await this.categoriesTab.click();
   }
 }

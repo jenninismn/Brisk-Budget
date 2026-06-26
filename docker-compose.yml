@@ -1,0 +1,62 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    networks:
+      default:
+        aliases:
+          - web
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(res => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  unit:
+    build: .
+    command: ["npm", "test", "--", "--runInBand", "tests/unit"]
+    profiles:
+      - test
+
+  integration:
+    build: .
+    command: ["npm", "test", "--", "--runInBand", "tests/integration"]
+    profiles:
+      - test
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.61.1-noble
+    working_dir: /app
+    volumes:
+      - .:/app
+      - playwright-node-modules:/app/node_modules
+    environment:
+      BASE_URL: http://web:3000
+      CI: "true"
+    depends_on:
+      app:
+        condition: service_healthy
+    command: sh -c "npm ci && npm run test:e2e -- --project=chromium"
+    profiles:
+      - test
+
+  loadtest:
+    image: grafana/k6
+    volumes:
+      - ./tests/k6:/scripts
+      - ./tests/output:/output
+    environment:
+      BASE_URL: http://web:3000
+      K6_WEB_DASHBOARD: "true"
+      K6_WEB_DASHBOARD_EXPORT: /output/k6/categories-dashboard.html
+      K6_WEB_DASHBOARD_PORT: "-1"
+    depends_on:
+      app:
+        condition: service_healthy
+    command: run /scripts/categories.js
+    profiles:
+      - test
+
+volumes:
+  playwright-node-modules:

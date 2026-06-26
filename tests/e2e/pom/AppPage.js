@@ -7,13 +7,7 @@ export class AppPage {
   }
 
   async goto() {
-    const responsePromise = this.page.waitForResponse(response => 
-      response.request().method() === 'GET' && response.url().includes('/transactions')
-    );
-
-    await this.page.goto('http://localhost:3000');
-
-    const response = await responsePromise;
+    const response = await this.page.goto('/');
 
     expect(response.status()).toBe(200);
     expect(response.ok()).toBeTruthy();

@@ -36,4 +36,50 @@ export class CategoryPage {
 
     await expect(category).toBeVisible();
   }
+
+  getCategoryGroup(name) {
+    return this.page.locator('.category-group').filter({
+      has: this.page.locator('.category-name-text', { hasText: name })
+    }).first();
+  }
+
+  async editCategory(currentName, newName, newEmoji) {
+    const categoryGroup = this.getCategoryGroup(currentName);
+    const responsePromise = this.page.waitForResponse(response =>
+      response.url().includes('/api/categories/') &&
+      response.request().method() === 'PUT'
+    );
+
+    await categoryGroup.locator('.category-header .btn-edit').click();
+    await expect(this.modal).toBeVisible();
+    await this.nameInput.fill(newName);
+    await this.emojiInput.fill(newEmoji);
+    await this.saveButton.click();
+
+    return responsePromise;
+  }
+
+  async addSubcategory(categoryName, subcategoryName) {
+    const categoryGroup = this.getCategoryGroup(categoryName);
+    const responsePromise = this.page.waitForResponse(response =>
+      response.url().includes('/subcategories') &&
+      response.request().method() === 'POST'
+    );
+
+    await categoryGroup.locator('.category-header .btn-add-sub').click();
+    await expect(this.modal).toBeVisible();
+    await this.nameInput.fill(subcategoryName);
+    await this.saveButton.click();
+
+    return responsePromise;
+  }
+
+  async expectSubcategoryExists(categoryName, subcategoryName) {
+    const categoryGroup = this.getCategoryGroup(categoryName);
+    await expect(
+      categoryGroup.locator('.subcategory-name-text', {
+        hasText: subcategoryName
+      })
+    ).toBeVisible();
+  }
 }
