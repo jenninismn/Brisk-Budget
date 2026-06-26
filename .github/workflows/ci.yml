@@ -12,30 +12,15 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run Jest Tests
-        run: npx jest tests/unit tests/integration
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      - name: Run Playwright Tests
-        run: npx playwright test tests/e2e
-
-      - name: Setup k6
-        uses: grafana/setup-k6-action@v1
-
-      - name: Start App and Run k6 Load Test
-        run: |
-          npm start &
-          sleep 5
-          k6 run tests/k6/loadtest.js
+      - name: Run Test Pipeline
+        run: npm run test:pipeline
