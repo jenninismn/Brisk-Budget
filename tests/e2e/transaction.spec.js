@@ -10,12 +10,15 @@ test.describe('Transaction E2E Tests', () => {
     const txPage = new TransactionPage(page);
     const accPage = new AccountPage(page);
 
+    //For playwright CI pipeline bc otherwise error
+    const uniqueName = `Jenni_${Date.now()}`;
+
     await app.goto();
     await app.openMobileMenuIfNeeded();
 
-    await accPage.createAccount('JennitestTwo');
+    await accPage.createAccount(uniqueName);
     
-    await page.locator('.account-item', { hasText: 'JennitestTwo' }).click();
+    await page.locator('.account-item', { hasText: uniqueName }).click();
 
     const response = await txPage.createTransaction({
       payee: 'Wocheneinkauf',
