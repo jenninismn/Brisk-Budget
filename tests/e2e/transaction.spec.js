@@ -1,15 +1,19 @@
 import { test, expect } from '@playwright/test';
-import { AppPage } from './pom/AppPage'; // Passe den Pfad zu deinen POM-Dateien an
+import { AppPage } from './pom/AppPage';
 import { TransactionPage } from './pom/TransactionPage';
+import { AccountPage } from './pom/AccountPage';
 
 test.describe('Transaction E2E Tests', () => {
 
   test('User can create a new transaction', async ({ page }) => {
     const app = new AppPage(page);
     const txPage = new TransactionPage(page);
+    const accPage = new AccountPage(page);
 
     await app.goto();
     await app.openMobileMenuIfNeeded();
+
+    await accPage.createAccount('Jennitest');
     
     await page.locator('.account-item', { hasText: 'Jennitest' }).click();
 
