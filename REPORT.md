@@ -20,11 +20,14 @@ Das Backend verwendet Node.js mit dem nativen HTTP-Modul. Das Frontend besteht a
 |---|---:|---:|---|
 | Unit Tests | Jest | 14 | Kategorien- und Hypothekenlogik |
 | Integrationstests | Jest | 8 | Kategorien-Routen und JSON-Persistenz |
-| System-/E2E-Tests | Playwright | 4 | Kategorien- und Transaktionsabläufe über die UI |
+| System-/E2E-Tests | Playwright | 4 Szenarien / 12 Ausführungen | Kategorien- und Transaktionsabläufe über die UI in Chromium, Firefox und WebKit |
 | reguläre Loadtests | k6 | 3 | Homepage sowie Lesen und Erstellen von Kategorien |
-| zusätzlicher Threshold-Test | k6 | 1 | Leistungsgrenze beim Lesen von Kategorien |
+| separate Threshold-Tests | k6 | 1 | Leistungsgrenzen beim Lesen Kategorien |
 
-Damit sind 29 regulär in der Pipeline ausgeführte Testfälle vorhanden. Der zusätzliche Threshold-Test wird separat gestartet.
+
+🟩 **LATE:** Ein weiterer Threshold-Test für das Erstellen von Kategorien wurde hinzugefügt
+
+Damit sind 29 unterschiedliche reguläre Testszenarien vorhanden.
 
 ### 3.1 Unit Tests
 
@@ -83,7 +86,7 @@ Vor und nach den Tests werden die isolierten Dateien entfernt. Wiederholte Testl
 
 ### 3.3 System- und End-to-End-Tests
 
-Die E2E-Tests verwenden Playwright und prüfen vollständige Abläufe vom Browser über das Backend bis zur JSON-Persistenz. In Docker wird Chromium verwendet. Lokal unterstützt die Konfiguration zusätzlich Firefox und WebKit.
+Die E2E-Tests verwenden Playwright und prüfen vollständige Abläufe vom Browser über das Backend bis zur JSON-Persistenz. Sie werden ausschließlich in Docker und nacheinander mit Chromium, Firefox und WebKit ausgeführt. 🟩 **LATE:** Jeder Browser bekommt jetzt einen neuen Container, damit sich die Läufe nicht gegenseitig blockieren. Nach jedem Browserlauf entfernt die Pipeline die Docker-Compose-Umgebung vollständig. Dadurch beeinflussen die von einem Browser erstellten Kategorien, Konten und Transaktionen keine späteren Browserläufe.
 
 Diese Abläufe wurden ausgewählt, weil Kategorien, Konten und Transaktionen zentrale Funktionen der Anwendung sind und hier das Zusammenspiel von Benutzeroberfläche, Backend und Persistenz als Gesamtsystem geprüft werden soll.
 
@@ -96,8 +99,6 @@ Implementierte Abläufe:
 
 Das Page Object Model unter `tests/e2e/pom/` kapselt Navigation, Selektoren und wiederverwendbare UI-Aktionen. Schreibende Abläufe warten auf die zugehörigen HTTP-Antworten. Damit wird neben der UI auch die erfolgreiche Backend-Verarbeitung geprüft.
 
-Der offizielle Playwright-HTML-Report wird unter `tests/output/playwright-report/index.html` erzeugt. Weitere Artefakte liegen in `tests/output/test-results/`. Bei einem Wiederholungsversuch nach einem Fehler wird ein Playwright Trace aufgezeichnet.
-
 ## 4. Testisolation mit Docker
 
 Docker Compose stellt folgende Services bereit:
@@ -108,11 +109,11 @@ Docker Compose stellt folgende Services bereit:
 | `unit` | Führt die Jest Unit Tests aus. |
 | `integration` | Führt die Jest Integrationstests aus. |
 | `e2e` | Führt Playwright mit Chromium aus. |
+| `e2e-firefox` | 🟩 **LATE:** Führt Playwright mit Firefox aus. |
+| `e2e-webkit` | 🟩 **LATE:** Führt Playwright mit WebKit aus. |
 | `loadtest` | Führt k6 aus und exportiert Dashboards. |
 
 Der App-Service muss seinen Healthcheck bestehen, bevor E2E- oder Loadtests beginnen. Im Compose-Netzwerk ist er über `http://web:3000` erreichbar.
-
-Vor dem vollständigen Lauf wird eine vorhandene Umgebung mit `docker compose down --remove-orphans` entfernt. Nach einem erfolgreichen Lauf wird sie erneut gestoppt. Für Anwendungsdaten ist kein persistentes Volume eingerichtet um keine Abhhängigkeiten zwischen einzelnen Testläufen einzubauen. Ein neuer App-Container beginnt daher ohne Daten aus vorherigen Läufen. Das Volume `playwright-node-modules` enthält nur installierte Node-Abhängigkeiten und keine Anwendungsdaten.
 
 Unit Tests arbeiten mit Daten im Speicher. Integrationstests verwenden eigene Testdateien. Somit greifen keine Teststufen auf produktive Daten zu.
 
@@ -131,19 +132,17 @@ npm ci
 npm run test:pipeline
 ```
 
-Das plattformunabhängige Node-Skript `scripts/run-test-pipeline.js` führt nacheinander die Bereinigung, Unit Tests, Integrationstests, E2E-Tests, drei reguläre Loadtests und abschließend das Stoppen der Compose-Umgebung aus. Beim ersten Fehler beendet es sich mit einem Fehlercode.
+Das plattformunabhängige Node-Skript `scripts/run-test-pipeline.js` führt nacheinander die Bereinigung, Unit Tests, Integrationstests, die E2E-Tests getrennt sowie drei reguläre Loadtests aus. Abschließend wird sie gestoppt. Beim ersten Fehler beendet sich die Pipeline mit einem Fehlercode.
+🟩 **LATE:** Es werden jetzt alle 3 Browser bei den e2e Tests verwendet und zwischen den Browsern  wird immer der Container bereinigt.
 
 ### 5.3 Einzelne Befehle
 
 ```bash
-npm test                    # Jest
-npm run test:e2e            # Playwright
-npm run test:e2e:ui         # Playwright UI
-npm run test:e2e:report     # Playwright-Report öffnen
-npm run test:load:threshold # separater Threshold-Test in Docker
+npm test                    # Jest Unit- und Integrationstests
+npm run test:pipeline       # vollständige Docker-Testpipeline
+npm run test:threshold      # Threshold-Test: Kategorien lesen
+npm run test:create:threshold # Threshold-Test: Kategorien erstellen
 ```
-
-Playwright startet bei lokaler Ausführung den Webserver automatisch. In Docker wird stattdessen die über `BASE_URL` konfigurierte App verwendet.
 
 ## 6. Continuous Integration
 
@@ -155,7 +154,7 @@ Ein Exit-Code ungleich null markiert den Workflow rot; ein erfolgreicher Gesamtl
 
 ### 7.1 Methodik
 
-Für das Lesen der Kategorien und der Homepage wurden eine maximale Fehlerrate von 1 % und eine p95-Antwortzeit unter 500 ms gewählt, weil diese einfachen Lesezugriffe schnell und nahezu fehlerfrei funktionieren sollen. Beim Erstellen von Kategorien sind wegen der Schreibzugriffe auf die JSON-Datei mehr Aufwand und mögliche Konkurrenz zwischen parallelen Anfragen zu erwarten; deshalb gelten hier mit 5 % Fehlerrate und 750 ms etwas großzügigere Grenzwerte. Der Threshold-Test verwendet wieder die strengeren Werte des Kategorien-Lesetests und bricht bei deren Überschreitung automatisch ab, da gerade die Belastungsgrenze dieses Endpunkts ermittelt werden soll.
+Für das Lesen der Kategorien und der Homepage wurden eine maximale Fehlerrate von 1 % und eine p95-Antwortzeit unter 500 ms gewählt, weil diese einfachen Lesezugriffe schnell und nahezu fehlerfrei funktionieren sollen. Beim Erstellen von Kategorien sind wegen der Schreibzugriffe auf die JSON-Datei mehr Aufwand und mögliche Konkurrenz zwischen parallelen Anfragen zu erwarten; deshalb gelten hier mit 5 % Fehlerrate und 750 ms etwas großzügigere Grenzwerte. Die beiden Threshold-Tests verwenden dieselben Grenzwerte wie der jeweils zugehörige reguläre Lese- beziehungsweise Schreibtest und brechen bei deren Überschreitung automatisch ab.
 
 ### 7.2 Implementierte Tests
 
@@ -165,8 +164,10 @@ Für das Lesen der Kategorien und der Homepage wurden eine maximale Fehlerrate v
 | `categories-create.js` | Write Load Test für `POST /api/categories` und die Persistenz | 10 s auf 5 VUs, 20 s bis 15 VUs, 10 s Abbau | Fehlerrate < 5 %, p95 < 750 ms, Status 201, richtiger Name |
 | `homepage-loadtest.js` | Read Load Test für die Startseite | 10 s auf 10 VUs, 20 s bis 50 VUs, 10 s Abbau | Fehlerrate < 1 %, p95 < 500 ms, Status 200 |
 | `categories-threshold.js` | Separater Stress-/Threshold-Test für den Kategorien-Endpunkt | stufenweise Erhöhung und automatischer Abbruch | Fehlerrate < 1 %, p95 < 500 ms |
+| `categories-create-threshold.js` | 🟩 **NEU:** Separater Stress-/Threshold-Test für `POST /api/categories` | stufenweise Erhöhung bis maximal 1.000 VUs und automatischer Abbruch | Fehlerrate < 5 %, p95 < 750 ms, Status 201, richtiger Name |
 
-Die drei regulären Tests sind Teil der Pipeline. Der aggressive Threshold-Test wird mit `npm run test:load:threshold` gezielt gestartet, damit ein absichtliches Überschreiten der Leistungsgrenze nicht jeden CI-Lauf scheitern lässt.
+Die drei regulären Tests sind Teil der Pipeline. Die beiden aggressiveren Threshold-Tests werden mit `npm run test:threshold` gezielt gestartet, damit ein absichtliches Überschreiten der Leistungsgrenzen nicht jeden CI-Lauf scheitern lässt.
+🟩 **LATE:** `npm run test:create:threshold` startet den 2. Thresholdtest
 
 ### 7.3 Visualisierung und Analyse
 
@@ -202,7 +203,9 @@ Am markierten Messzeitpunkt waren 14 VUs aktiv und es wurden rund 8,4 Kategorien
 
 Am markierten Messzeitpunkt wurden bei 27 aktiven VUs rund 40 Requests pro Sekunde verarbeitet. Die p95-Antwortzeit lag bei ungefähr 2,1 ms und es traten keine fehlgeschlagenen Requests auf. Die Grenzwerte von 500 ms und 1 % Fehlern wurden somit klar eingehalten.
 
-### 7.4 Threshold-Test
+### 7.4 Threshold-Tests
+
+#### Kategorien lesen
 
 ![k6-Dashboard Threshold-Test](tests/output/screenshots/k6-threshold-dashboard.png)
 
@@ -212,10 +215,16 @@ Im separaten Threshold-Test wurde die Last auf `GET /api/categories` wesentlich 
 
 Gegen Ende stieg die Fehlerrate auf 1,7 % und überschritt damit den erlaubten Wert von 1 %. Der Test zeigt somit, auf dass die Grenze knapp unter 3000 Requests pro Sekunde liegt.
 
+#### 🟩 **LATE:** Kategorien erstellen
+
+![k6-Dashboard Threshold-Test Kategorien erstellen](tests/output/screenshots/k6-create-threshold.png)
+
+Abbildung 5: Entwicklung von Last, Durchsatz, Antwortzeit und Fehlerrate beim Erstellen von Kategorien bis zum automatischen Abbruch.*
+
+Der separate Schreib-Threshold-Test erhöht die Last auf `POST /api/categories` stufenweise bis maximal 1.000 VUs. Am letzten im Dashboard dargestellten Messzeitpunkt waren 47 VUs aktiv und es wurden rund 53,6 Requests pro Sekunde verarbeitet. Die p95-Antwortzeit lag bei etwa 1,4 Sekunden und damit über dem festgelegten Grenzwert von 750 ms, während die Fehlerrate bei 0 % lag. Der automatische Abbruch zeigt, dass bei diesem Testlauf die Antwortzeit vor der Fehlerrate zur begrenzenden Größe wurde.
+
 Hinweis: Die Werte gelten nur für die lokale Docker- und Rechnerumgebung und sind nicht auf andere Setups übertragbar.
 
 ## 8. Zusammenfassung
 
 Die Test-Suite deckt reine Logik, die Integration mit der JSON-Persistenz, vollständige Benutzerabläufe und das Verhalten unter Last ab. Jest liefert schnelles Feedback für Unit- und Integrationstests. Playwright prüft reale Abläufe aus Benutzersicht. k6 bewertet funktionale Korrektheit und Antwortzeiten bei steigender Parallelität.
-
-Docker Compose schafft eine reproduzierbare Umgebung und verhindert Änderungen an produktiven Daten. Durch die gemeinsame Node-Pipeline werden lokal und in GitHub Actions dieselben Testschritte ausgeführt. Die regulären Lasttests zeigen eine stabile Verarbeitung der vorgesehenen Last. Der zusätzliche Threshold-Test zeigt, dass unter deutlich höherer Last sowohl die Antwortzeit als auch die Fehlerrate die festgelegten Grenzwerte überschreiten können.

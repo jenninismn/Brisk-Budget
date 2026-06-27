@@ -266,6 +266,12 @@ describe('Categories Integration Tests', () => {
     expect(savedData[0].subcategories).toHaveLength(1);
     expect(savedData[0].subcategories[0].name).toBe('Hotel');
     expect(savedData[0].subcategories[0].sortOrder).toBe(1);
+    
+    //haben wir vergessen, wurde neu hinzugefügt
+    expect(savedData[0].id).toBe('cat1');
+    expect(savedData[0].name).toBe('Urlaub');
+    expect(savedData[0].subcategories).toHaveLength(1);
+    expect(savedData[0].subcategories[0].name).toBe('Hotel');
 
     expect(res.end).toHaveBeenCalled();
   });

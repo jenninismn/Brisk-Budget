@@ -34,10 +34,48 @@ services:
     environment:
       BASE_URL: http://web:3000
       CI: "true"
+      PLAYWRIGHT_OUTPUT_DIR: tests/output/test-results/chromium
+      PLAYWRIGHT_REPORT_DIR: tests/output/playwright-report/chromium
     depends_on:
       app:
         condition: service_healthy
     command: sh -c "npm ci && npm run test:e2e -- --project=chromium"
+    profiles:
+      - test
+
+  e2e-firefox:
+    image: mcr.microsoft.com/playwright:v1.61.1-noble
+    working_dir: /app
+    volumes:
+      - .:/app
+      - playwright-node-modules:/app/node_modules
+    environment:
+      BASE_URL: http://web:3000
+      CI: "true"
+      PLAYWRIGHT_OUTPUT_DIR: tests/output/test-results/firefox
+      PLAYWRIGHT_REPORT_DIR: tests/output/playwright-report/firefox
+    depends_on:
+      app:
+        condition: service_healthy
+    command: sh -c "npm ci && npm run test:e2e -- --project=firefox"
+    profiles:
+      - test
+
+  e2e-webkit:
+    image: mcr.microsoft.com/playwright:v1.61.1-noble
+    working_dir: /app
+    volumes:
+      - .:/app
+      - playwright-node-modules:/app/node_modules
+    environment:
+      BASE_URL: http://web:3000
+      CI: "true"
+      PLAYWRIGHT_OUTPUT_DIR: tests/output/test-results/webkit
+      PLAYWRIGHT_REPORT_DIR: tests/output/playwright-report/webkit
+    depends_on:
+      app:
+        condition: service_healthy
+    command: sh -c "npm ci && npm run test:e2e -- --project=webkit"
     profiles:
       - test
 

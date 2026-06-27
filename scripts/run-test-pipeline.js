@@ -37,9 +37,34 @@ const steps = [
     args: ['compose', '--profile', 'test', 'run', '--rm', 'integration']
   },
   {
-    name: 'E2E Tests',
+    name: 'E2E Tests Chromium',
     command: 'docker',
     args: ['compose', '--profile', 'test', 'run', '--rm', 'e2e']
+  },
+  {
+    name: 'Docker Compose Umgebung nach Chromium bereinigen',
+    command: 'docker',
+    args: ['compose', 'down', '--remove-orphans']
+  },
+  {
+    name: 'E2E Tests Firefox',
+    command: 'docker',
+    args: ['compose', '--profile', 'test', 'run', '--rm', 'e2e-firefox']
+  },
+  {
+    name: 'Docker Compose Umgebung nach Firefox bereinigen',
+    command: 'docker',
+    args: ['compose', 'down', '--remove-orphans']
+  },
+  {
+    name: 'E2E Tests WebKit',
+    command: 'docker',
+    args: ['compose', '--profile', 'test', 'run', '--rm', 'e2e-webkit']
+  },
+  {
+    name: 'Docker Compose Umgebung nach WebKit bereinigen',
+    command: 'docker',
+    args: ['compose', 'down', '--remove-orphans']
   },
   {
     name: 'Kategorien lesen Load Test',

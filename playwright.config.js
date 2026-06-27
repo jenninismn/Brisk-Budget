@@ -14,7 +14,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests/e2e',
-  outputDir: 'tests/output/test-results',
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || 'tests/output/test-results',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -24,7 +24,9 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [['html', { outputFolder: 'tests/output/playwright-report' }]],
+  reporter: [['html', {
+    outputFolder: process.env.PLAYWRIGHT_REPORT_DIR || 'tests/output/playwright-report'
+  }]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */

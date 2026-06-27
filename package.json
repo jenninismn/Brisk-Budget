@@ -8,11 +8,9 @@
     "dev": "node --watch server/index.js",
     "test": "jest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report",
     "test:pipeline": "node scripts/run-test-pipeline.js",
-    "test:load:threshold": "docker compose --profile test run --rm loadtest run /scripts/categories-threshold.js"
+    "test:threshold": "docker compose --profile test run --rm -e K6_WEB_DASHBOARD_EXPORT=/output/k6/categories-threshold-dashboard.html loadtest run /scripts/categories-threshold.js",
+    "test:create:threshold": "docker compose --profile test run --rm -e K6_WEB_DASHBOARD_EXPORT=/output/k6/categories-create-threshold-dashboard.html loadtest run /scripts/categories-create-threshold.js"
   },
   "jest": {
     "testEnvironment": "node",
